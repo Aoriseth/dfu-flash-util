@@ -46,16 +46,17 @@ class DeviceInfo(QVBoxLayout):
         self.addWidget(self.device_size)
 
     def set_device(self, device):
-        self.device_alt.setText("Alt: "+device.alt)
-        self.device_name.setText("Name: "+ device.name)
-        self.device_address.setText("Address: "+device.address)
-        self.device_size.setText("Size: "+device.size+" Kb")
+        self.device_alt.setText("Alt: " + device.alt)
+        self.device_name.setText("Name: " + device.name)
+        self.device_address.setText("Address: " + device.address)
+        self.device_size.setText("Size: " + device.size + " Kb")
 
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.multiline_text = MultiLineText()
+        self.flash_button = self.create_flash_button()
         self.backup_button = self.create_backup_button()
         self.list_button = self.create_list_button()
         self.device_selection = self.create_device_selection()
@@ -72,6 +73,7 @@ class MainWindow(QWidget):
         button_bar.addWidget(self.device_selection)
         button_bar.addLayout(self.device_details)
         button_bar.addWidget(self.backup_button)
+        button_bar.addWidget(self.flash_button)
 
         main_layout.addLayout(button_bar)
         self.setLayout(main_layout)
@@ -83,6 +85,12 @@ class MainWindow(QWidget):
         button = QPushButton()
         button.setText("Backup device firmware")
         button.clicked.connect(self.backup_firmware)
+        return button
+
+    def create_flash_button(self):
+        button = QPushButton()
+        button.setText("Flash device firmware")
+        button.clicked.connect(self.flash_firmware)
         return button
 
     def create_list_button(self):
@@ -108,7 +116,7 @@ class MainWindow(QWidget):
             connected_devices.append(new_device)
             self.device_selection.addItem(new_device.name)
             self.device_details.set_device(new_device)
-            self.device_selection.setCurrentIndex(self.device_selection.count()-1)
+            self.device_selection.setCurrentIndex(self.device_selection.count() - 1)
             self.active_device = new_device
         self.append_text(command_output)
 
@@ -123,9 +131,19 @@ class MainWindow(QWidget):
 
         command_output = run_command(['sudo', 'dfu-util',
                                       '-a', self.active_device.alt,
-                                      '-U', str(datetime.now())+'-backup.bin',
-                                      '-s', self.active_device.address+':'+self.active_device.size*1024])
-        print(command_output)
+                                      '-U', str(datetime.now()) + 'backup.bin',
+                                      '-s', self.active_device.address + ':' + self.active_device.size * 1024])
+        self.append_text(command_output)
+
+    def flash_firmware(self):
+        if not self.active_device.alt:
+            self.append_text("::: No device selected to flash\n")
+            return
+
+        command_output = run_command(['sudo', 'dfu-util',
+                                      '-a', self.active_device.alt,
+                                      '-s', self.active_device.address + ':leave',
+                                      '-D', 'backup.bin'])
         self.append_text(command_output)
 
     def change_device_selection(self, value):
