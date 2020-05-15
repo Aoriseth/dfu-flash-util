@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess
 import sys
@@ -5,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from PyQt5.QtGui import QTextCursor
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QTextEdit, QHBoxLayout, QComboBox
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QTextEdit, QHBoxLayout, QComboBox, QFileDialog
 
 connected_devices = []
 
@@ -62,9 +63,13 @@ class MainWindow(QWidget):
         self.device_selection = self.create_device_selection()
         self.device_details = DeviceInfo()
         self.active_device = Device("", "No devices found", "", "")
-        self.initUI()
+        self.file_select_button = self.create_file_select_button()
+        self.selected_file = ""
+        self.selected_file_display = QLabel()
+        self.selected_file_display.setText(":: No file selected")
+        self.init_ui()
 
-    def initUI(self):
+    def init_ui(self):
         main_layout = QHBoxLayout()
         button_bar = QVBoxLayout()
 
@@ -73,6 +78,8 @@ class MainWindow(QWidget):
         button_bar.addWidget(self.device_selection)
         button_bar.addLayout(self.device_details)
         button_bar.addWidget(self.backup_button)
+        button_bar.addWidget(self.file_select_button)
+        button_bar.addWidget(self.selected_file_display)
         button_bar.addWidget(self.flash_button)
 
         main_layout.addLayout(button_bar)
@@ -99,11 +106,24 @@ class MainWindow(QWidget):
         button.clicked.connect(self.list_devices)
         return button
 
+    def create_file_select_button(self):
+        button = QPushButton()
+        button.setText("Select bin file")
+        button.clicked.connect(self.select_file)
+        return button
+
     def create_device_selection(self):
         combobox = QComboBox()
         combobox.addItem("No Devices found")
         combobox.activated[str].connect(self.change_device_selection)
         return combobox
+
+    def select_file(self):
+        filename = QFileDialog.getOpenFileName(self, 'Open file', '', "Bin files (*.bin)")
+        path = filename[0]
+        self.selected_file = path
+        print(path)
+        self.selected_file_display.setText('>>'+os.path.basename(path))
 
     def list_devices(self):
         command_output = run_command(['sudo', 'dfu-util', '-l'])
@@ -131,7 +151,7 @@ class MainWindow(QWidget):
 
         command_output = run_command(['sudo', 'dfu-util',
                                       '-a', self.active_device.alt,
-                                      '-U', str(datetime.now()) + 'backup.bin',
+                                      '-U', str(datetime.now()) + '-backup.bin',
                                       '-s', self.active_device.address + ':' + self.active_device.size * 1024])
         self.append_text(command_output)
 
@@ -143,7 +163,7 @@ class MainWindow(QWidget):
         command_output = run_command(['sudo', 'dfu-util',
                                       '-a', self.active_device.alt,
                                       '-s', self.active_device.address + ':leave',
-                                      '-D', 'backup.bin'])
+                                      '-D', self.selected_file])
         self.append_text(command_output)
 
     def change_device_selection(self, value):
