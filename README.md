@@ -1,5 +1,5 @@
 # dfu-flash-util
-Python interface for quickly flashing bin files to STM32 devices
+Python interface for quickly flashing bin files to STM32 devices, without requiring keyboard input
 
 ## How to run
 use `sudo python /ui/interface.py` to run the program.
