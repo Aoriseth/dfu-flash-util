@@ -1,3 +1,5 @@
+**Archived, see [codeberg](https://codeberg.org/Aoriseth/dfu-flash-util)**
+
 # dfu-flash-util
 Python interface for quickly flashing bin files to STM32 devices, without requiring keyboard input
 
